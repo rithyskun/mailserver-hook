@@ -16,10 +16,11 @@ export default defineEventHandler(async (event) => {
     return
   }
 
-  const config = useRuntimeConfig()
-  const authHeader = getHeader(event, 'authorization')
+  try {
+    const config = useRuntimeConfig()
+    const authHeader = getHeader(event, 'authorization')
 
-  if (!authHeader) {
+    if (!authHeader) {
     const error: ApiErrorResponse = {
       statusCode: 401,
       statusMessage: 'Unauthorized',
@@ -32,10 +33,10 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Extract Bearer token
-  const token = authHeader.replace('Bearer ', '').trim()
+    // Extract Bearer token
+    const token = authHeader.replace('Bearer ', '').trim()
 
-  if (!token || token !== config.apiSecret) {
+    if (!token || token !== config.apiSecret) {
     const error: ApiErrorResponse = {
       statusCode: 401,
       statusMessage: 'Unauthorized',
@@ -48,6 +49,9 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // API key is valid, attach to event for use in handlers
-  event.context.apiKey = token
+    // API key is valid, attach to event for use in handlers
+    event.context.apiKey = token
+  } catch (error) {
+    throw error
+  }
 })

@@ -1,6 +1,7 @@
 import { defineNuxtConfig } from 'nuxt/config'
 
 export default defineNuxtConfig({
+  ssr: false,
   devtools: { enabled: true },
   typescript: { strict: true },
   telemetry: false,
@@ -8,6 +9,14 @@ export default defineNuxtConfig({
     server: {
       fs: {
         strict: false,
+      },
+    },
+    build: {
+      rollupOptions: {
+        onwarn(warning: any, warn: any) {
+          if (warning.code === 'UNRESOLVED_IMPORT') return
+          warn(warning)
+        },
       },
     },
   },

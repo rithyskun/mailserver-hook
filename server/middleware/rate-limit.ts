@@ -1,15 +1,12 @@
-import { defineEventHandler, createError, getHeader } from 'h3'
+import { defineEventHandler, createError, getHeader, setHeader } from 'h3'
 import { getDatabase } from '~/server/utils/database'
 
 /**
  * Rate limiting configuration
  */
 const RATE_LIMIT_CONFIG = {
-  // General API endpoint: 10 requests per minute
   api: { maxRequests: 10, windowMs: 60 },
-  // Email send endpoints: 5 requests per minute per IP
   emailSend: { maxRequests: 5, windowMs: 60 },
-  // Batch endpoint: 3 requests per minute
   emailBatch: { maxRequests: 3, windowMs: 60 },
 }
 
@@ -51,9 +48,9 @@ function checkRateLimit(
     .get(clientIp, windowKey) as RateLimitEntry | undefined
 
   if (!existing) {
-    // First request in this window
-    db.prepare('INSERT INTO rate_limits (clientIp, requestCount, window) VALUES (?, ?, ?)')
-      .run(clientIp, 1, windowKey)
+    db.prepare(
+      'INSERT INTO rate_limits (clientIp, requestCount, lastRequest, window) VALUES (?, ?, ?, ?)',
+    ).run(clientIp, 1, now.toISOString(), windowKey)
 
     return {
       allowed: true,
@@ -62,31 +59,46 @@ function checkRateLimit(
     }
   }
 
-  if (existing.requestCount < config.maxRequests) {
-    // Still within limit
-    db.prepare('UPDATE rate_limits SET requestCount = requestCount + 1 WHERE id = ?')
-      .run(existing.id)
-
+  if (existing.requestCount >= config.maxRequests) {
     return {
-      allowed: true,
-      remaining: config.maxRequests - existing.requestCount - 1,
+      allowed: false,
+      remaining: 0,
       resetTime: now.getTime() + config.windowMs * 1000,
     }
   }
 
-  // Rate limit exceeded
+  db.prepare(
+    'UPDATE rate_limits SET requestCount = requestCount + 1, lastRequest = ? WHERE clientIp = ? AND window = ?',
+  ).run(now.toISOString(), clientIp, windowKey)
+
   return {
-    allowed: false,
-    remaining: 0,
+    allowed: true,
+    remaining: config.maxRequests - existing.requestCount - 1,
     resetTime: now.getTime() + config.windowMs * 1000,
   }
 }
 
 /**
- * Generic rate limiter middleware
+ * Rate limiting middleware
  */
-export function createRateLimitMiddleware(endpoint: 'api' | 'emailSend' | 'emailBatch') {
-  return defineEventHandler((event) => {
+export default defineEventHandler((event) => {
+  try {
+    const path = event.node.req.url
+
+    // Skip health check and non-API routes
+    if (!path || path.includes('/health') || !path.includes('/api/')) {
+      return
+    }
+
+    // Determine endpoint type
+    let endpoint: 'api' | 'emailSend' | 'emailBatch' = 'api'
+    if (path.includes('/api/email/send')) {
+      endpoint = 'emailSend'
+    } else if (path.includes('/api/email/batch')) {
+      endpoint = 'emailBatch'
+    }
+
+    // Check rate limit
     const clientIp = getClientIp(event)
     const config = RATE_LIMIT_CONFIG[endpoint]
     const limit = checkRateLimit(clientIp, endpoint)
@@ -96,6 +108,7 @@ export function createRateLimitMiddleware(endpoint: 'api' | 'emailSend' | 'email
     setHeader(event, 'x-ratelimit-remaining', limit.remaining.toString())
     setHeader(event, 'x-ratelimit-reset', Math.ceil(limit.resetTime / 1000).toString())
 
+    // Reject if rate limit exceeded
     if (!limit.allowed) {
       throw createError({
         statusCode: 429,
@@ -106,26 +119,7 @@ export function createRateLimitMiddleware(endpoint: 'api' | 'emailSend' | 'email
         },
       })
     }
-  })
-}
-
-export default defineEventHandler((event) => {
-  const path = event.node.req.url
-
-  // Skip health check and non-API routes
-  if (!path || path.includes('/health')) {
-    return
-  }
-
-  // Apply rate limiting based on endpoint
-  if (path.includes('/api/email/send')) {
-    const limiter = createRateLimitMiddleware('emailSend')
-    return limiter(event)
-  } else if (path.includes('/api/email/batch')) {
-    const limiter = createRateLimitMiddleware('emailBatch')
-    return limiter(event)
-  } else if (path.includes('/api/')) {
-    const limiter = createRateLimitMiddleware('api')
-    return limiter(event)
+  } catch (error) {
+    throw error
   }
 })

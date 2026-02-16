@@ -64,25 +64,26 @@ function createTables(db: Database.Database): void {
       provider TEXT,
       success INTEGER DEFAULT 0,
       errorMessage TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      INDEX idx_timestamp (timestamp),
-      INDEX idx_path (path),
-      INDEX idx_statusCode (statusCode),
-      INDEX idx_method (method)
-    )
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_timestamp ON request_logs(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_path ON request_logs(path);
+    CREATE INDEX IF NOT EXISTS idx_statusCode ON request_logs(statusCode);
+    CREATE INDEX IF NOT EXISTS idx_method ON request_logs(method);
   `)
 
   // Rate limit tracking table
   db.exec(`
     CREATE TABLE IF NOT EXISTS rate_limits (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      clientIp TEXT NOT NULL UNIQUE,
+      clientIp TEXT NOT NULL,
       requestCount INTEGER DEFAULT 1,
       lastRequest DATETIME DEFAULT CURRENT_TIMESTAMP,
       window TEXT NOT NULL,
-      INDEX idx_clientIp (clientIp),
-      INDEX idx_lastRequest (lastRequest)
-    )
+      UNIQUE(clientIp, window)
+    );
+    CREATE INDEX IF NOT EXISTS idx_clientIp ON rate_limits(clientIp);
+    CREATE INDEX IF NOT EXISTS idx_lastRequest ON rate_limits(lastRequest);
   `)
 
   // API key usage tracking
@@ -95,10 +96,10 @@ function createTables(db: Database.Database): void {
       successCount INTEGER DEFAULT 0,
       failureCount INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      INDEX idx_apiKey (apiKey),
-      INDEX idx_lastUsed (lastUsed)
-    )
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_apiKey ON api_key_usage(apiKey);
+    CREATE INDEX IF NOT EXISTS idx_lastUsed ON api_key_usage(lastUsed);
   `)
 
   console.log('[Database] Tables created successfully')

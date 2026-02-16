@@ -1,5 +1,5 @@
 import { defineEventHandler, getQuery } from 'h3'
-import { getRequestLogs, getRequestStats } from '~/server/utils/database'
+import { getRequestLogs, getDatabase } from '~/server/utils/database'
 
 /**
  * GET /api/logs
@@ -15,20 +15,21 @@ import { getRequestLogs, getRequestStats } from '~/server/utils/database'
  * - endDate: filter logs before this ISO date
  */
 export default defineEventHandler(async (event) => {
-  const query = getQuery(event)
+  try {
+    const query = getQuery(event)
 
-  const limit = Math.min(parseInt((query.limit as string) || '100'), 500)
-  const offset = parseInt((query.offset as string) || '0')
+    const limit = Math.min(parseInt((query.limit as string) || '100'), 500)
+    const offset = parseInt((query.offset as string) || '0')
 
-  const filter = {
-    method: query.method as string | undefined,
-    path: query.path as string | undefined,
-    statusCode: query.statusCode ? parseInt(query.statusCode as string) : undefined,
-    startDate: query.startDate as string | undefined,
-    endDate: query.endDate as string | undefined,
-  }
+    const filter = {
+      method: query.method as string | undefined,
+      path: query.path as string | undefined,
+      statusCode: query.statusCode ? parseInt(query.statusCode as string) : undefined,
+      startDate: query.startDate as string | undefined,
+      endDate: query.endDate as string | undefined,
+    }
 
-  const logs = getRequestLogs(limit, offset, filter)
+    const logs = getRequestLogs(limit, offset, filter)
 
   // Get total count for pagination
   let countQuery = 'SELECT COUNT(*) as count FROM request_logs WHERE 1=1'
@@ -55,19 +56,21 @@ export default defineEventHandler(async (event) => {
     countParams.push(filter.endDate)
   }
 
-  const { getDatabase } = await import('~/server/utils/database')
-  const db = getDatabase()
-  const countResult = db.prepare(countQuery).get(...countParams) as { count: number }
+    const db = getDatabase()
+    const countResult = db.prepare(countQuery).get(...countParams) as { count: number }
 
-  return {
-    success: true,
-    data: logs,
-    pagination: {
-      limit,
-      offset,
-      total: countResult.count,
-      hasMore: offset + limit < countResult.count,
-    },
-    timestamp: new Date().toISOString(),
+    return {
+      success: true,
+      data: logs,
+      pagination: {
+        limit,
+        offset,
+        total: countResult.count,
+        hasMore: offset + limit < countResult.count,
+      },
+      timestamp: new Date().toISOString(),
+    }
+  } catch (error) {
+    throw error
   }
 })

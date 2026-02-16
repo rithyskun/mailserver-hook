@@ -100,20 +100,10 @@ export default defineEventHandler(async (event) => {
       }
       return originalEnd.apply(this, [chunk, ...args] as any)
     }
-
-    // Track response status
-    event.node.res.on('finish', () => {
-      statusCode = event.node.res.statusCode || 200
-    })
   }
 
-  // Wrap response handler to capture errors
-  let responseBody: any
-
-  // Use onBeforeResponse hook
-  const originalSendError = event.node.res.statusCode
-
-  return async () => {
+  // Log after response is sent
+  event.node.res.on('finish', () => {
     try {
       // Calculate timing
       const duration = Date.now() - startTime
@@ -167,5 +157,5 @@ export default defineEventHandler(async (event) => {
     } catch (error) {
       console.error('[Logging] Error logging request:', error)
     }
-  }
+  })
 })
