@@ -3,6 +3,13 @@ import { defineNuxtConfig } from 'nuxt/config'
 export default defineNuxtConfig({
   devtools: { enabled: true },
   typescript: { strict: true },
+  vite: {
+    server: {
+      fs: {
+        strict: false,
+      },
+    },
+  },
   runtimeConfig: {
     apiSecret: process.env.API_SECRET || 'your-secret-key-here',
     gmail: {
