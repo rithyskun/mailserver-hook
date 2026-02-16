@@ -22,6 +22,7 @@ export default defineNuxtConfig({
   nitro: {
     prerender: { crawlLinks: false },
     cors: true,
+    compatibilityDate: '2026-02-16',
   },
   experimental: {
     typescriptBundlerResolution: true,
