@@ -4,7 +4,7 @@
 # This script demonstrates how to test the email webhook API
 
 API_URL="http://localhost:3000"
-API_KEY="your-api-secret-key-here"
+API_KEY="your-secret-key-here"
 
 echo "=== Email Web Server Hook - API Testing ==="
 echo ""

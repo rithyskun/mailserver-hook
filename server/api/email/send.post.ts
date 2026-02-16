@@ -1,14 +1,17 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import type { H3Event } from 'h3'
 import { setResponseStatus } from 'h3'
-import { GmailService } from '~/server/utils/gmail.service'
-import { SendGridService } from '~/server/utils/sendgrid.service'
-import { EmailProvider } from '~/types/email'
-import type { EmailWebhookPayload, EmailResponse } from '~/types/email'
+import { GmailService } from '../../utils/gmail.service'
+import { SendGridService } from '../../utils/sendgrid.service'
+import { EmailProvider, GmailAuthMethod } from '../../../types/email'
+import type { EmailWebhookPayload, EmailResponse, Auth0Config } from '../../../types/email'
 
 /**
  * POST /api/email/send
  * Sends an email using the specified provider (Gmail or SendGrid)
+ *
+ * Gmail supports both Service Account and Auth0 authentication
+ * Set GMAIL_AUTH_METHOD to 'auth0' or 'service-account' in environment
  *
  * Request body:
  * {
@@ -63,22 +66,60 @@ export default defineEventHandler(async (event): Promise<EmailResponse> => {
     let response: EmailResponse
 
     if (payload.provider === EmailProvider.GMAIL) {
-      // Gmail service
-      if (!config.gmail.clientEmail || !config.gmail.privateKey) {
-        throw createError({
-          statusCode: 500,
-          statusMessage: 'Internal Server Error',
-          data: {
-            message: 'Gmail service not configured',
-          },
-        })
-      }
-
+      // Gmail service - supports Service Account and Auth0
       const gmailService = new GmailService()
-      await gmailService.initialize(
-        config.gmail.clientEmail,
-        config.gmail.privateKey,
-      )
+      const authMethod = (config.gmail.authMethod || GmailAuthMethod.SERVICE_ACCOUNT) as string
+
+      if (authMethod === GmailAuthMethod.AUTH0) {
+        // Initialize with Auth0
+        const auth0Config: Auth0Config = {
+          domain: config.auth0.domain,
+          clientId: config.auth0.clientId,
+          clientSecret: config.auth0.clientSecret,
+          userId: config.gmail.auth0UserId,
+          audience: config.gmail.auth0Audience,
+        }
+
+        // Validate Auth0 configuration
+        if (!auth0Config.domain || !auth0Config.clientId || !auth0Config.clientSecret) {
+          throw createError({
+            statusCode: 500,
+            statusMessage: 'Internal Server Error',
+            data: {
+              message: 'Auth0 configuration incomplete. Check AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET',
+            },
+          })
+        }
+
+        const gmailUserEmail = payload.message.from || config.gmail.userEmail
+        if (!gmailUserEmail) {
+          throw createError({
+            statusCode: 400,
+            statusMessage: 'Bad Request',
+            data: {
+              message: 'Gmail user email required in message.from or GMAIL_USER_EMAIL config',
+            },
+          })
+        }
+
+        await gmailService.initializeWithAuth0(auth0Config, gmailUserEmail)
+      } else {
+        // Initialize with Service Account (default)
+        if (!config.gmail.clientEmail || !config.gmail.privateKey) {
+          throw createError({
+            statusCode: 500,
+            statusMessage: 'Internal Server Error',
+            data: {
+              message: 'Gmail service not configured. Set GMAIL_CLIENT_EMAIL and GMAIL_PRIVATE_KEY',
+            },
+          })
+        }
+
+        await gmailService.initializeWithServiceAccount(
+          config.gmail.clientEmail,
+          config.gmail.privateKey,
+        )
+      }
 
       response = await gmailService.sendEmail(payload.message)
     } else if (payload.provider === EmailProvider.SENDGRID) {

@@ -4,6 +4,12 @@ export enum EmailProvider {
   SENDGRID = 'sendgrid',
 }
 
+// Gmail authentication methods
+export enum GmailAuthMethod {
+  SERVICE_ACCOUNT = 'service-account',
+  AUTH0 = 'auth0',
+}
+
 // Email message structure
 export interface EmailMessage {
   to: string | string[]
@@ -40,6 +46,15 @@ export interface EmailWebhookPayload {
   provider: EmailProvider
   message: EmailMessage
   metadata?: Record<string, any>
+}
+
+// Auth0 configuration
+export interface Auth0Config {
+  domain: string
+  clientId: string
+  clientSecret: string
+  userId?: string
+  audience?: string
 }
 
 // API Error response

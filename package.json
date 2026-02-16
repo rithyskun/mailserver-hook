@@ -15,8 +15,10 @@
     "test:api": "chmod +x test-api.sh && ./test-api.sh"
   },
   "dependencies": {
+    "@auth0/auth0-node": "^5.0.0",
     "@sendgrid/mail": "^8.1.0",
     "@vue/compiler-sfc": "^3.4.0",
+    "axios": "^1.6.0",
     "better-sqlite3": "^9.2.0",
     "dotenv": "^16.3.1",
     "googleapis": "^130.0.0",
