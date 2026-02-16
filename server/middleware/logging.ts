@@ -76,17 +76,29 @@ export default defineEventHandler(async (event) => {
   ;(event as any)._logging = context
 
   // Hook into response to track size and status
-  const originalSend = event.node.res.send
+  const originalWrite = event.node.res.write
+  const originalEnd = event.node.res.end
   let statusCode = 200
   let success = true
   let errorMessage: string | undefined
 
   if (event.node.res) {
-    event.node.res.send = function (data: any) {
-      if (data) {
-        context.responseSize = typeof data === 'string' ? Buffer.byteLength(data) : Buffer.byteLength(JSON.stringify(data))
+    // Track response size through write
+    event.node.res.write = function (chunk: any, ...args: any[]) {
+      if (chunk) {
+        const size = typeof chunk === 'string' ? Buffer.byteLength(chunk) : chunk.length
+        context.responseSize += size
       }
-      return originalSend.apply(this, arguments)
+      return originalWrite.apply(this, [chunk, ...args] as any)
+    }
+
+    // Track response size through end
+    event.node.res.end = function (chunk: any, ...args: any[]) {
+      if (chunk) {
+        const size = typeof chunk === 'string' ? Buffer.byteLength(chunk) : chunk.length
+        context.responseSize += size
+      }
+      return originalEnd.apply(this, [chunk, ...args] as any)
     }
 
     // Track response status

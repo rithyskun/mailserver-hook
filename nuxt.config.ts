@@ -3,6 +3,7 @@ import { defineNuxtConfig } from 'nuxt/config'
 export default defineNuxtConfig({
   devtools: { enabled: true },
   typescript: { strict: true },
+  telemetry: false,
   vite: {
     server: {
       fs: {
@@ -39,5 +40,14 @@ export default defineNuxtConfig({
     prerender: { crawlLinks: false },
     cors: true,
     compatibilityDate: '2026-02-16',
+    rollupConfig: {
+      output: {
+        format: 'esm',
+      },
+    },
+    minify: false,
+    experimental: {
+      wasm: false,
+    },
   },
 })

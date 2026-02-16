@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const config = useRuntimeConfig(event)
+    const config = useRuntimeConfig()
     const results: EmailResponse[] = []
 
     if (payload.provider === EmailProvider.GMAIL) {
@@ -58,7 +58,7 @@ export default defineEventHandler(async (event) => {
       }
 
       const gmailService = new GmailService()
-      await gmailService.initialize(
+      await gmailService.initializeWithServiceAccount(
         config.gmail.clientEmail,
         config.gmail.privateKey,
       )

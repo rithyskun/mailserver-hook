@@ -5,7 +5,7 @@ import { defineEventHandler } from 'h3'
  * Health check endpoint to verify service is running
  */
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig(event)
+  const config = useRuntimeConfig()
 
   return {
     status: 'healthy',

@@ -5,10 +5,10 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "nuxt dev",
-    "build": "nuxt build",
-    "preview": "nuxt preview",
-    "generate": "nuxt generate",
+    "dev": "./dev.sh",
+    "build": "NODE_OPTIONS='--no-deprecation' nuxt build",
+    "preview": "NODE_OPTIONS='--no-deprecation' nuxt preview",
+    "generate": "NODE_OPTIONS='--no-deprecation' nuxt generate",
     "lint": "eslint .",
     "type-check": "nuxt typecheck",
     "test:advanced": "chmod +x test-advanced-features.sh && ./test-advanced-features.sh",
@@ -41,7 +41,8 @@
   },
   "pnpm": {
     "overrides": {
-      "nuxi": "3.10.0"
+      "nuxi": "3.10.0",
+      "@nuxt/telemetry": "2.5.4"
     }
   }
 }

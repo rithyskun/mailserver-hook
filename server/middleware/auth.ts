@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
     return
   }
 
-  const config = useRuntimeConfig(event)
+  const config = useRuntimeConfig()
   const authHeader = getHeader(event, 'authorization')
 
   if (!authHeader) {
