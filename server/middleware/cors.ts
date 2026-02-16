@@ -38,12 +38,12 @@ export default defineEventHandler((event) => {
       'Content-Type, Authorization, X-Requested-With, Accept, Origin',
     )
     setHeader(event, 'Access-Control-Allow-Credentials', 'true')
-    setHeader(event, 'Access-Control-Max-Age', '3600')
+    setHeader(event, 'Access-Control-Max-Age', 3600)
     setHeader(event, 'Access-Control-Expose-Headers', 'Content-Length, X-Total-Count')
 
     // Handle preflight requests
     if (event.node.req.method === 'OPTIONS') {
-      setResponseStatus(event, 200)
+      event.node.res.statusCode = 200
       return
     }
   }

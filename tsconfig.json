@@ -18,7 +18,7 @@
       "~": ["."],
       "@": ["."]
     },
-    "types": ["@nuxt/devtools", "node"]
+    "types": ["@nuxt/devtools", "node", "h3"]
   },
   "include": [
     ".nuxt/dist/types/**/*.d.ts",

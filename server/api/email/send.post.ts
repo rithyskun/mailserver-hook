@@ -1,4 +1,6 @@
 import { defineEventHandler, readBody, createError } from 'h3'
+import type { H3Event } from 'h3'
+import { setResponseStatus } from 'h3'
 import { GmailService } from '~/server/utils/gmail.service'
 import { SendGridService } from '~/server/utils/sendgrid.service'
 import { EmailProvider } from '~/types/email'
@@ -57,7 +59,7 @@ export default defineEventHandler(async (event): Promise<EmailResponse> => {
       })
     }
 
-    const config = useRuntimeConfig()
+    const config = useRuntimeConfig(event)
     let response: EmailResponse
 
     if (payload.provider === EmailProvider.GMAIL) {
@@ -110,7 +112,7 @@ export default defineEventHandler(async (event): Promise<EmailResponse> => {
 
     // Set response status based on success
     if (!response.success) {
-      setResponseStatus(event, 500)
+      event.node.res.statusCode = 500
     }
 
     return response

@@ -92,9 +92,9 @@ export function createRateLimitMiddleware(endpoint: 'api' | 'emailSend' | 'email
     const limit = checkRateLimit(clientIp, endpoint)
 
     // Set rate limit headers
-    setHeader(event, 'x-ratelimit-limit', String(config.maxRequests))
-    setHeader(event, 'x-ratelimit-remaining', String(limit.remaining))
-    setHeader(event, 'x-ratelimit-reset', String(Math.ceil(limit.resetTime / 1000)))
+    setHeader(event, 'x-ratelimit-limit', config.maxRequests.toString())
+    setHeader(event, 'x-ratelimit-remaining', limit.remaining.toString())
+    setHeader(event, 'x-ratelimit-reset', Math.ceil(limit.resetTime / 1000).toString())
 
     if (!limit.allowed) {
       throw createError({

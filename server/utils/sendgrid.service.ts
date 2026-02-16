@@ -32,7 +32,7 @@ export class SendGridService {
         subject: message.subject,
         html: message.html,
         text: message.text,
-        attachments: message.attachments?.map((att) => ({
+        attachments: message.attachments?.map((att: any) => ({
           filename: att.filename,
           content: att.content ? (typeof att.content === 'string' ? att.content : att.content.toString('base64')) : undefined,
           path: att.path,

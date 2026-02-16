@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const config = useRuntimeConfig()
+    const config = useRuntimeConfig(event)
     const results: EmailResponse[] = []
 
     if (payload.provider === EmailProvider.GMAIL) {
